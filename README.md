@@ -21,15 +21,12 @@ No install needed. It runs online on Streamlit Community Cloud and works on your
 
 ## How it works
 
-```
- ESP32 + sensors (Wokwi)  ──Wi-Fi──►  ThingSpeak (cloud)  ──internet──►  Dashboard (Streamlit)
-   reads + runs the pump               stores the readings                cards, charts, CSV
-```
+![How Smart Farm Monitor works](docs/images/how-it-works.png)
 
 1. **The ESP32** reads its sensors every 20 seconds.
 2. **It decides about watering by itself:** the pump turns on when the soil drops below **30%** and keeps going until it's back up to **40%**, so it runs steadily instead of flicking on and off. This keeps working even if the internet drops.
 3. **ThingSpeak** stores every reading in the cloud.
-4. **The dashboard** fetches the latest readings, tidies them up with pandas, and shows live cards, charts, a short summary and a CSV download. It's hosted on **Streamlit Community Cloud**, so it's always online at [smart-farm-monitor.streamlit.app](https://smart-farm-monitor.streamlit.app/).
+4. **The dashboard** fetches the latest readings and tidies them up with pandas. It shows a card for each reading (temperature, humidity, soil moisture and the pump), each with its value right now, the change since the last reading, its own chart that zooms in automatically so small changes are easy to see, and the lowest, average and highest values. There's also a table of the latest readings and a CSV download. It's hosted on **Streamlit Community Cloud**, so it's always online at [smart-farm-monitor.streamlit.app](https://smart-farm-monitor.streamlit.app/).
 
 Wokwi's sensors sit still unless you move them, so the code adds small, natural changes (a tenth of a degree here, a little drying there) to make the data behave like a real field. One setting, `NATURAL_CHANGES = False`, switches this off for a real board.
 
@@ -60,7 +57,7 @@ Wokwi's sensors sit still unless you move them, so the code adds small, natural 
 
 **1. ThingSpeak:** make a free channel at [thingspeak.mathworks.com](https://thingspeak.mathworks.com) with 4 fields: `Temperature`, `Humidity`, `Soil moisture`, `Pump`. Note your **Channel ID**, **Write API Key** and **Read API Key**.
 
-**2. Your keys:** copy `.env.example` to `.env` and fill it in. This file stays on your computer and never goes to GitHub.
+**2. Your settings:** open `dashboard/app.py` and put your **Channel ID** in `CHANNEL_ID` at the top. Add the **Read API Key** in `READ_API_KEY` only if your channel is private. For the test sender, copy `.env.example` to `.env` and add your Write API Key; that file stays on your computer and never goes to GitHub.
 
 **3. The dashboard:** just want to look? Open the [live version](https://smart-farm-monitor.streamlit.app/). To run your own copy on your PC, double-click **`Start Dashboard.bat`**. Or from a terminal:
 ```bash
@@ -74,11 +71,7 @@ streamlit run dashboard/app.py
 
 Want to check the cloud side first? Run `python dashboard/send_test_data.py`.
 
-**5. Put your own copy online (optional):** on [share.streamlit.io](https://share.streamlit.io), create an app from your fork with the main file `dashboard/app.py`. Then paste your keys into **Advanced settings → Secrets**:
-```toml
-THINGSPEAK_CHANNEL_ID = "your channel id"
-THINGSPEAK_READ_KEY = "your read key"
-```
+**5. Put your own copy online (optional):** on [share.streamlit.io](https://share.streamlit.io), create an app from your fork with the main file `dashboard/app.py`. It reads the Channel ID from the top of `app.py`, so there's nothing else to set up.
 
 ## If something's not working
 
