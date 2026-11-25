@@ -37,10 +37,10 @@ def get_readings(how_many=200)
 
     # Give the ThingSpeak fields friendly names
     readings = readings.rename(columns={
-        field1 Temperature (°C),
-        field2 Humidity (%),
-        field3 Soil moisture (%),
-        field4 Pump,
+        "field1": "Temperature (°C)",
+        "field2": "Humidity (%)",
+        "field3": "Soil moisture (%)",
+        "field4": "Pump"
     })
 
     # Turn the text into proper numbers and times
