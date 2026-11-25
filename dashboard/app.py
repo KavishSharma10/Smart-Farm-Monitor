@@ -5,6 +5,7 @@
 #
 # Run it with:   streamlit run dashboard/app.py
 
+import altair as alt
 import pandas as pd
 import requests
 import streamlit as st
@@ -51,6 +52,34 @@ def get_readings(how_many=200):
     return readings
 
 
+# ---------- Charts ----------
+
+def zoomed_chart(readings, column, unit):
+    """A line chart that zooms in on the readings by itself, so small changes are easy to see.
+
+    Streamlit's quick chart always starts at 0, which squashes a reading like 23.8 to 24.2 C
+    into a flat line. This one lets the axis fit itself around the latest values every refresh.
+    """
+    # Show times exactly as they are on the farm (Adelaide time), whoever is looking
+    chart_data = readings[["Time", column]].copy()
+    chart_data["Time"] = chart_data["Time"].dt.tz_localize(None)
+
+    return (
+        alt.Chart(chart_data)
+        .mark_line(strokeWidth=2.5)
+        .encode(
+            x=alt.X(field="Time", type="temporal", title=None),
+            y=alt.Y(field=column, type="quantitative", title=unit,
+                    scale=alt.Scale(zero=False, nice=True)),   # don't start at 0 - fit the data
+            tooltip=[
+                alt.Tooltip(field="Time", type="temporal", title="Time", format="%d %b %H:%M:%S"),
+                alt.Tooltip(field=column, type="quantitative", title=column, format=".1f"),
+            ],
+        )
+        .properties(height=CHART_HEIGHT)
+    )
+
+
 # ---------- One card per reading ----------
 
 def reading_card(title, column, unit, decimals, readings):
@@ -62,7 +91,7 @@ def reading_card(title, column, unit, decimals, readings):
         st.subheader(title)
         st.metric("Right now", f"{latest:.{decimals}f} {unit}",
                   f"{latest - previous:+.{decimals}f} {unit} since last reading")
-        st.line_chart(readings.set_index("Time")[column], height=CHART_HEIGHT)
+        st.altair_chart(zoomed_chart(readings, column, unit), use_container_width=True)
         st.caption(
             f"Lowest {readings[column].min():.{decimals}f} {unit} | "
             f"Average {readings[column].mean():.{decimals}f} {unit} | "
