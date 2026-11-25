@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "author": "Kavish Sharma",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": { "env": "micropython-20231227-v1.22.0" } },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -105, "left": 170, "attrs": { "temperature": "24", "humidity": "45" } },
+    { "type": "wokwi-potentiometer", "id": "soil", "top": 40, "left": -150, "attrs": {} },
+    { "type": "wokwi-resistor", "id": "r1", "top": 150, "left": 170, "attrs": { "value": "220" } },
+    { "type": "wokwi-led", "id": "pump", "top": 100, "left": 270, "attrs": { "color": "blue", "label": "Pump" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:VCC", "esp:3V3", "red", [] ],
+    [ "dht1:GND", "esp:GND.2", "black", [] ],
+    [ "dht1:SDA", "esp:15", "green", [] ],
+    [ "soil:VCC", "esp:3V3", "red", [] ],
+    [ "soil:GND", "esp:GND.1", "black", [] ],
+    [ "soil:SIG", "esp:34", "orange", [] ],
+    [ "esp:26", "r1:1", "blue", [] ],
+    [ "r1:2", "pump:A", "blue", [] ],
+    [ "pump:C", "esp:GND.2", "black", [] ]
+  ],
+  "dependencies": {}
+}
