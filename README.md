@@ -9,9 +9,13 @@ A small IoT project that keeps an eye on a garden bed. An ESP32 reads the soil m
 ![ThingSpeak](https://img.shields.io/badge/Cloud-ThingSpeak-0076A8)
 ![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)
 
-🔗 **Live dashboard:** _add link_ · **Wokwi simulation:** _add link_ · **ThingSpeak channel:** _add link_
+### 👉 [See the live dashboard](https://smart-farm-monitor.streamlit.app/)
 
-![Dashboard](docs/images/dashboard.png)
+No install needed. It runs online on Streamlit Community Cloud and works on your phone too. If it's been quiet for a while, click **"Yes, get this app back up"** and it'll wake up in a few seconds.
+
+📊 **Raw data:** [ThingSpeak channel 3593878](https://thingspeak.mathworks.com/channels/3593878)
+
+[![Dashboard](docs/images/dashboard.png)](https://smart-farm-monitor.streamlit.app/)
 
 ---
 
@@ -25,7 +29,7 @@ A small IoT project that keeps an eye on a garden bed. An ESP32 reads the soil m
 1. **The ESP32** reads its sensors every 20 seconds.
 2. **It decides about watering by itself:** the pump turns on when the soil drops below **30%** and keeps going until it's back up to **40%**, so it runs steadily instead of flicking on and off. This keeps working even if the internet drops.
 3. **ThingSpeak** stores every reading in the cloud.
-4. **The dashboard** fetches the latest readings, tidies them up with pandas, and shows live cards, charts, a short summary and a CSV download.
+4. **The dashboard** fetches the latest readings, tidies them up with pandas, and shows live cards, charts, a short summary and a CSV download. It's hosted on **Streamlit Community Cloud**, so it's always online at [smart-farm-monitor.streamlit.app](https://smart-farm-monitor.streamlit.app/).
 
 Wokwi's sensors sit still unless you move them, so the code adds small, natural changes (a tenth of a degree here, a little drying there) to make the data behave like a real field. One setting, `NATURAL_CHANGES = False`, switches this off for a real board.
 
@@ -58,7 +62,7 @@ Wokwi's sensors sit still unless you move them, so the code adds small, natural 
 
 **2. Your keys:** copy `.env.example` to `.env` and fill it in. This file stays on your computer and never goes to GitHub.
 
-**3. The dashboard:** double-click **`Start Dashboard.bat`**. Or from a terminal:
+**3. The dashboard:** just want to look? Open the [live version](https://smart-farm-monitor.streamlit.app/). To run your own copy on your PC, double-click **`Start Dashboard.bat`**. Or from a terminal:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
@@ -70,6 +74,12 @@ streamlit run dashboard/app.py
 
 Want to check the cloud side first? Run `python dashboard/send_test_data.py`.
 
+**5. Put your own copy online (optional):** on [share.streamlit.io](https://share.streamlit.io), create an app from your fork with the main file `dashboard/app.py`. Then paste your keys into **Advanced settings → Secrets**:
+```toml
+THINGSPEAK_CHANNEL_ID = "your channel id"
+THINGSPEAK_READ_KEY = "your read key"
+```
+
 ## If something's not working
 
 | What you see | Try this |
@@ -78,6 +88,7 @@ Want to check the cloud side first? Run `python dashboard/send_test_data.py`.
 | Dashboard says `400 Bad Request` | Add your Read API Key to `.env`, or make the channel public |
 | Wokwi stuck on `Connecting to Wi-Fi...` | Your network or antivirus is blocking Wokwi. Try another browser or a phone hotspot |
 | `ModuleNotFoundError` | Use `Start Dashboard.bat`, or activate `.venv` first |
+| Live app says it's asleep | Click **"Yes, get this app back up"** and wait a few seconds |
 
 ## What I'd add next
 

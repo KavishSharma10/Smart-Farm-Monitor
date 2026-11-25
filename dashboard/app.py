@@ -3,7 +3,7 @@
 # This pulls the latest readings our ESP32 sent to ThingSpeak and shows them
 # as live cards and charts. It refreshes by itself every 20 seconds.
 #
-# Run it with:   streamlit run dashboard/app.py
+# Run it with   streamlit run dashboardapp.py
 
 import pandas as pd
 import requests
@@ -12,109 +12,132 @@ import streamlit as st
 
 # ---------- Settings you can change ----------
 
-CHANNEL_ID = "3593878"   # the number shown on your ThingSpeak channel page
-READ_API_KEY = ""                           # only needed if your channel is private
+CHANNEL_ID = 3593878                      # the number shown on your ThingSpeak channel page
+READ_API_KEY =                            # only needed if your channel is private
 DRY_SOIL_LEVEL = 30                         # same number as in the ESP32 code
-TIMEZONE = "Australia/Adelaide"
+TIMEZONE = AustraliaAdelaide
+CHART_HEIGHT = 200                          # how tall each little chart is (pixels)
 
 
 # ---------- Getting the data ----------
 
-def get_readings(how_many=200):
-    """Ask ThingSpeak for the latest readings and tidy them into a table."""
-    url = f"https://api.thingspeak.com/channels/{CHANNEL_ID}/feeds.json"
-    settings = {"results": how_many}
-    if READ_API_KEY:
-        settings["api_key"] = READ_API_KEY
+def get_readings(how_many=200)
+    Ask ThingSpeak for the latest readings and tidy them into a table.
+    url = fhttpsapi.thingspeak.comchannels{CHANNEL_ID}feeds.json
+    settings = {results how_many}
+    if READ_API_KEY
+        settings[api_key] = READ_API_KEY
 
     reply = requests.get(url, params=settings, timeout=10)
     reply.raise_for_status()
-    readings = pd.DataFrame(reply.json()["feeds"])
+    readings = pd.DataFrame(reply.json()[feeds])
 
-    if readings.empty:
+    if readings.empty
         return readings
 
     # Give the ThingSpeak fields friendly names
     readings = readings.rename(columns={
-        "field1": "Temperature (°C)",
-        "field2": "Humidity (%)",
-        "field3": "Soil moisture (%)",
-        "field4": "Pump",
+        field1 Temperature (°C),
+        field2 Humidity (%),
+        field3 Soil moisture (%),
+        field4 Pump,
     })
 
     # Turn the text into proper numbers and times
-    for column in ["Temperature (°C)", "Humidity (%)", "Soil moisture (%)", "Pump"]:
-        readings[column] = pd.to_numeric(readings[column], errors="coerce")
-    readings["Time"] = pd.to_datetime(readings["created_at"]).dt.tz_convert(TIMEZONE)
+    for column in [Temperature (°C), Humidity (%), Soil moisture (%), Pump]
+        readings[column] = pd.to_numeric(readings[column], errors=coerce)
+    readings[Time] = pd.to_datetime(readings[created_at]).dt.tz_convert(TIMEZONE)
 
     return readings
 
 
+# ---------- One card per reading ----------
+
+def reading_card(title, column, unit, decimals, readings)
+    A boxed card for one reading the value now, the change, its own chart and a quick summary.
+    latest = readings[column].iloc[-1]
+    previous = readings[column].iloc[-2] if len(readings)  1 else latest
+
+    with st.container(border=True)
+        st.subheader(title)
+        st.metric(Right now, f{latest.{decimals}f} {unit},
+                  f{latest - previous+.{decimals}f} {unit} since last reading)
+        st.line_chart(readings.set_index(Time)[column], height=CHART_HEIGHT)
+        st.caption(
+            fLowest {readings[column].min().{decimals}f} {unit} · 
+            fAverage {readings[column].mean().{decimals}f} {unit} · 
+            fHighest {readings[column].max().{decimals}f} {unit}
+        )
+
+
+def pump_card(readings)
+    The pump gets its own card too is it on, when did it run, and for how long.
+    pump_now = readings[Pump].iloc[-1] == 1
+
+    # How long the pump ran add up the gap after every reading where the pump was on
+    gaps = readings[Time].diff().shift(-1).dt.total_seconds()
+    gaps = gaps.fillna(gaps.median() if gaps.notna().any() else 0)
+    pump_minutes = (gaps  readings[Pump]).sum()  60
+
+    # Count how many times it switched on (an off - on change)
+    times_started = int(((readings[Pump] == 1) & (readings[Pump].shift(1, fill_value=0) == 0)).sum())
+
+    with st.container(border=True)
+        st.subheader(💧 Pump)
+        st.metric(Right now, ON - watering if pump_now else Off)
+        st.area_chart(readings.set_index(Time)[Pump], height=CHART_HEIGHT)
+        st.caption(fSwitched on {times_started} times · ran for about {pump_minutes.0f} minutes in total)
+
+
 # ---------- The page ----------
 
-st.set_page_config(page_title="Smart Farm Monitor", page_icon="🌱", layout="wide")
-st.title("🌱 Smart Farm Monitor")
-st.caption("ESP32 sensors → ThingSpeak cloud → this dashboard")
+st.set_page_config(page_title=Smart Farm Monitor, page_icon=🌱, layout=wide)
+st.title(🌱 Smart Farm Monitor)
+st.caption(ESP32 sensors → ThingSpeak cloud → this dashboard)
 
 
-@st.fragment(run_every="20s")          # re-runs just this part every 20 seconds
-def show_dashboard():
-    try:
+@st.fragment(run_every=20s)          # re-runs just this part every 20 seconds
+def show_dashboard()
+    try
         readings = get_readings()
-    except Exception as error:
-        st.error(f"Couldn't get data from ThingSpeak: {error}")
+    except Exception as error
+        st.error(fCouldn't get data from ThingSpeak {error})
         return
 
-    if readings.empty:
-        st.info("No readings yet - start the ESP32 in Wokwi and wait about 20 seconds.")
+    if readings.empty
+        st.info(No readings yet - start the ESP32 in Wokwi and wait about 20 seconds.)
         return
 
-    latest = readings.iloc[-1]
-    previous = readings.iloc[-2] if len(readings) > 1 else latest
+    # A friendly status line - says what the soil and the pump are actually doing right now
+    soil_now = readings[Soil moisture (%)].iloc[-1]
+    if readings[Pump].iloc[-1] == 1
+        st.info(fWatering now - soil is at {soil_now.1f}% and the pump is running.)
+    elif soil_now  DRY_SOIL_LEVEL
+        st.warning(fSoil is dry ({soil_now.1f}%) - the pump should switch on with the next reading.)
+    else
+        st.success(fSoil moisture is healthy ({soil_now.1f}%).)
 
-    # Big number cards along the top, each showing the change since the last reading
-    card1, card2, card3, card4 = st.columns(4)
-    card1.metric("Temperature", f"{latest['Temperature (°C)']:.1f} °C",
-                 f"{latest['Temperature (°C)'] - previous['Temperature (°C)']:+.1f}")
-    card2.metric("Humidity", f"{latest['Humidity (%)']:.0f} %",
-                 f"{latest['Humidity (%)'] - previous['Humidity (%)']:+.0f}")
-    card3.metric("Soil moisture", f"{latest['Soil moisture (%)']:.0f} %",
-                 f"{latest['Soil moisture (%)'] - previous['Soil moisture (%)']:+.0f}")
-    card4.metric("Pump", "ON 💧" if latest["Pump"] == 1 else "Off")
+    # Four cards, two per row - one for each reading
+    top_left, top_right = st.columns(2)
+    with top_left
+        reading_card(🌡️ Temperature, Temperature (°C), °C, 1, readings)
+    with top_right
+        reading_card(💨 Humidity, Humidity (%), %, 1, readings)
 
-    # A friendly warning when the soil is dry
-    if latest["Soil moisture (%)"] < DRY_SOIL_LEVEL:
-        st.warning(f"Soil is dry ({latest['Soil moisture (%)']:.0f}%) - the pump has been switched on.")
-    else:
-        st.success("Soil moisture is healthy.")
-
-    # Charts over time
-    chart_data = readings.set_index("Time")
-    left, right = st.columns(2)
-    with left:
-        st.subheader("Soil moisture")
-        st.line_chart(chart_data["Soil moisture (%)"])
-    with right:
-        st.subheader("Temperature and humidity")
-        st.line_chart(chart_data[["Temperature (°C)", "Humidity (%)"]])
-
-    # A few simple facts about the data we have
-    st.subheader("Summary")
-    pump_minutes = readings["Pump"].sum() * 20 / 60          # each reading covers about 20 seconds
-    st.write(
-        f"**{len(readings)}** readings since {readings['Time'].iloc[0]:%d %b %H:%M}. "
-        f"Average soil moisture **{readings['Soil moisture (%)'].mean():.0f}%**, "
-        f"highest temperature **{readings['Temperature (°C)'].max():.1f} °C**, "
-        f"pump ran for about **{pump_minutes:.0f} minutes**."
-    )
+    bottom_left, bottom_right = st.columns(2)
+    with bottom_left
+        reading_card(🌱 Soil moisture, Soil moisture (%), %, 1, readings)
+    with bottom_right
+        pump_card(readings)
 
     # The raw numbers, newest first, plus a download button
-    st.subheader("Latest readings")
-    table = readings[["Time", "Temperature (°C)", "Humidity (%)", "Soil moisture (%)", "Pump"]]
-    st.dataframe(table.iloc[::-1].head(15), hide_index=True, use_container_width=True)
-    st.download_button("Download all readings (CSV)", table.to_csv(index=False), "farm_readings.csv")
+    st.subheader(Latest readings)
+    table = readings[[Time, Temperature (°C), Humidity (%), Soil moisture (%), Pump]]
+    st.dataframe(table.iloc[-1].head(15), hide_index=True, use_container_width=True)
+    st.download_button(Download all readings (CSV), table.to_csv(index=False), farm_readings.csv)
 
-    st.caption(f"Last updated {latest['Time']:%H:%M:%S} · refreshes every 20 seconds")
+    st.caption(f{len(readings)} readings since {readings['Time'].iloc[0]%d %b %H%M} · 
+               flast one at {readings['Time'].iloc[-1]%H%M%S} · refreshes every 20 seconds)
 
 
 show_dashboard()
